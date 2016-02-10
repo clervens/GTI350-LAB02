@@ -179,12 +179,14 @@ public class DrawingView extends View {
 	static final int MODE_CAMERA_MANIPULATION = 1; // the user is panning/zooming the camera
 	static final int MODE_SHAPE_MANIPULATION = 2; // the user is translating/rotating/scaling a shape
 	static final int MODE_LASSO = 3; // the user is drawing a lasso to select shapes
+	static final int MODE_DELETE = 4; // the user is deleting shapes.
 	int currentMode = MODE_NEUTRAL;
 
 	// This is only used when currentMode==MODE_SHAPE_MANIPULATION, otherwise it is equal to -1
 	int indexOfShapeBeingManipulated = -1;
 
 	MyButton lassoButton = new MyButton( "Lasso", 10, 70, 140, 140 );
+	MyButton btnDelete = new MyButton("Effacer", 10, 250, 140, 140);
 	
 	OnTouchListener touchListener;
 	
@@ -252,11 +254,12 @@ public class DrawingView extends View {
 		}
 
 		// draw all the shapes
-		shapeContainer.draw( gw, indexOfShapeBeingManipulated );
+		shapeContainer.draw(gw, indexOfShapeBeingManipulated);
 
 		gw.setCoordinateSystemToPixels();
 
 		lassoButton.draw( gw, currentMode == MODE_LASSO );
+		btnDelete.draw( gw, currentMode == MODE_DELETE);
 
 		if ( currentMode == MODE_LASSO ) {
 			MyCursor lassoCursor = cursorContainer.getCursorByType( MyCursor.TYPE_DRAGGING, 0 );
@@ -350,7 +353,10 @@ public class DrawingView extends View {
 							indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( p_world );
 							if ( lassoButton.contains(p_pixels) ) {
 								currentMode = MODE_LASSO;
-								cursor.setType( MyCursor.TYPE_BUTTON );
+								cursor.setType(MyCursor.TYPE_BUTTON);
+							} else if (btnDelete.contains(p_pixels)){
+								currentMode = MODE_DELETE;
+								cursor.setType(MyCursor.TYPE_BUTTON);
 							} else if (Point2DUtil.isPointInsidePolygon(
 									selectionContainer, p_world)) {
 								currentMode = MODE_SHAPE_MANIPULATION;
@@ -453,6 +459,19 @@ public class DrawingView extends View {
 								currentMode = MODE_NEUTRAL;
 							}
 						}
+						break;
+					case MODE_DELETE:
+						if ( type == MotionEvent.ACTION_DOWN ) {
+
+						} else if ( type == MotionEvent.ACTION_MOVE ){
+							// no further updating necessary here
+						} else if ( type == MotionEvent.ACTION_UP ) {
+							cursorContainer.removeCursorByIndex( cursorIndex );
+							if ( cursorContainer.getNumCursors() == 0 ) {
+								currentMode = MODE_NEUTRAL;
+							}
+						}
+
 						break;
 					}
 					

@@ -172,6 +172,7 @@ public class DrawingView extends View {
 
 	ShapeContainer shapeContainer = new ShapeContainer();
 	ArrayList< Shape > selectedShapes = new ArrayList< Shape >();
+	ArrayList<Point2D> selectionContainer = new ArrayList<>();
 	CursorContainer cursorContainer = new CursorContainer();
 
 	static final int MODE_NEUTRAL = 0; // the default mode
@@ -242,11 +243,12 @@ public class DrawingView extends View {
 					rect.bound( p );
 				}
 			}
-			points = Point2DUtil.computeConvexHull( points );
-			points = Point2DUtil.computeExpandedPolygon( points, rect.getDiagonal().length()/30 );
+			points = Point2DUtil.computeConvexHull(points);
+			points = Point2DUtil.computeExpandedPolygon(points, rect.getDiagonal().length() / 30);
 
-			gw.setColor( 1.0f, 0.0f, 0.0f, 0.8f );
-			gw.fillPolygon( points );
+			gw.setColor(1.0f, 0.0f, 0.0f, 0.8f);
+			gw.fillPolygon(points);
+			selectionContainer = points;
 		}
 
 		// draw all the shapes
@@ -349,14 +351,16 @@ public class DrawingView extends View {
 							if ( lassoButton.contains(p_pixels) ) {
 								currentMode = MODE_LASSO;
 								cursor.setType( MyCursor.TYPE_BUTTON );
-							}
-							else if ( indexOfShapeBeingManipulated >= 0 ) {
+							} else if (Point2DUtil.isPointInsidePolygon(
+									selectionContainer, p_world)) {
+								currentMode = MODE_SHAPE_MANIPULATION;
+								cursor.setType(MyCursor.TYPE_DRAGGING);
+							} else if ( indexOfShapeBeingManipulated >= 0 ) {
 								currentMode = MODE_SHAPE_MANIPULATION;
 								cursor.setType( MyCursor.TYPE_DRAGGING );
-							}
-							else {
+							} else {
 								currentMode = MODE_CAMERA_MANIPULATION;
-								cursor.setType( MyCursor.TYPE_DRAGGING );
+								cursor.setType(MyCursor.TYPE_DRAGGING);
 							}
 						}
 						break;
@@ -379,10 +383,12 @@ public class DrawingView extends View {
 						}
 						break;
 					case MODE_SHAPE_MANIPULATION :
+						Point2D p_pixels = new Point2D(x,y);
+						Point2D p_world = gw.convertPixelsToWorldSpaceUnits( p_pixels );
 						if ( cursorContainer.getNumCursors() == 2 && type == MotionEvent.ACTION_MOVE && indexOfShapeBeingManipulated>=0 ) {
 							MyCursor cursor0 = cursorContainer.getCursorByIndex( 0 );
 							MyCursor cursor1 = cursorContainer.getCursorByIndex( 1 );
-							Shape shape = shapeContainer.getShape( indexOfShapeBeingManipulated );
+							Shape shape = shapeContainer.getShape(indexOfShapeBeingManipulated);
 
 							Point2DUtil.transformPointsBasedOnDisplacementOfTwoPoints(
 								shape.getPoints(),
@@ -391,6 +397,20 @@ public class DrawingView extends View {
 								gw.convertPixelsToWorldSpaceUnits( cursor0.getCurrentPosition() ),
 								gw.convertPixelsToWorldSpaceUnits( cursor1.getCurrentPosition() )
 							);
+						}
+						else if(cursorContainer.getNumCursors() == 1 && type == MotionEvent.ACTION_MOVE
+								&& Point2DUtil.isPointInsidePolygon(selectionContainer, p_world))
+						{
+							MyCursor cursorTranslationSelection = cursorContainer.getCursorByIndex( 0 );
+							for (Shape selShape:selectedShapes) {
+								Point2DUtil.transformPointsBasedOnDisplacementOfTwoPoints(
+										selShape.getPoints(),
+										gw.convertPixelsToWorldSpaceUnits(cursorTranslationSelection.getPreviousPosition()),
+										gw.convertPixelsToWorldSpaceUnits(cursorTranslationSelection.getPreviousPosition()),
+										gw.convertPixelsToWorldSpaceUnits(cursorTranslationSelection.getCurrentPosition()),
+										gw.convertPixelsToWorldSpaceUnits(cursorTranslationSelection.getCurrentPosition())
+								);
+							}
 						}
 						else if ( type == MotionEvent.ACTION_UP ) {
 							cursorContainer.removeCursorByIndex( cursorIndex );

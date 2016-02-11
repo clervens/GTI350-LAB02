@@ -9,11 +9,11 @@ class ShapeContainer {
 	public Shape getShape( int index ) { return shapes.get(index); }
 
 	public void addShape( ArrayList< Point2D > points /* in world space */ ) {
-			Shape s = new Shape( points );
-			shapes.add( s );
+		Shape s = new Shape( points );
+		shapes.add( s );
 	}
 
-	public void removeShape( Shape s /* in world space */ ) {
+	public void removeShape( Shape s ) {
 		shapes.remove(s);
 	}
 

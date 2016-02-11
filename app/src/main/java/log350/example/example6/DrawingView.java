@@ -2,18 +2,12 @@
 package log350.example.example6;
 
 import java.util.ArrayList;
-//import java.util.List;
-
 import android.content.Context;
-//import android.graphics.Matrix;
 import android.graphics.Canvas;
-//import android.graphics.Rect;
-//import android.graphics.Path;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Toast;
 
 
 // This class stores the current position of a finger,
@@ -281,8 +275,6 @@ public class DrawingView extends View {
 	 * @return a listener
 	 */
 	private OnTouchListener getTouchListener(){
-		final DrawingView that = this;
-
 		if ( touchListener == null ) {
 			touchListener = new OnTouchListener() {
 				

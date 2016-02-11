@@ -13,7 +13,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
-
+import android.widget.Toast;
 
 
 // This class stores the current position of a finger,
@@ -47,8 +47,6 @@ class MyCursor {
 	public static final int TYPE_BUTTON = 1; // the finger is pressing a virtual button
 	public static final int TYPE_IGNORE = 2; // the finger should not be there and will be ignored
 	public int type = TYPE_IGNORE;
-
-
 
 
 	public MyCursor( int id, float x, float y ) {
@@ -283,6 +281,8 @@ public class DrawingView extends View {
 	 * @return a listener
 	 */
 	private OnTouchListener getTouchListener(){
+		final DrawingView that = this;
+
 		if ( touchListener == null ) {
 			touchListener = new OnTouchListener() {
 				
@@ -461,15 +461,25 @@ public class DrawingView extends View {
 						}
 						break;
 					case MODE_DELETE:
-						if ( type == MotionEvent.ACTION_DOWN ) {
+
+						Point2D tmpPixels = new Point2D(x,y);
+						Point2D tmpPWorld = gw.convertPixelsToWorldSpaceUnits( tmpPixels );
+						indexOfShapeBeingManipulated = shapeContainer.indexOfShapeContainingGivenPoint( tmpPWorld );
+
+						if ( type == MotionEvent.ACTION_DOWN && indexOfShapeBeingManipulated != -1) {
+
+							Shape tmpShape = shapeContainer.getShape(indexOfShapeBeingManipulated);
+							shapeContainer.removeShape(tmpShape);
+							selectedShapes.remove(tmpShape);
+
 
 						} else if ( type == MotionEvent.ACTION_MOVE ){
-							// no further updating necessary here
 						} else if ( type == MotionEvent.ACTION_UP ) {
 							cursorContainer.removeCursorByIndex( cursorIndex );
 							if ( cursorContainer.getNumCursors() == 0 ) {
 								currentMode = MODE_NEUTRAL;
 							}
+
 						}
 
 						break;

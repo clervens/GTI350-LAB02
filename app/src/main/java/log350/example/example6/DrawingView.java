@@ -172,13 +172,15 @@ public class DrawingView extends View {
 	static final int MODE_SHAPE_MANIPULATION = 2; // the user is translating/rotating/scaling a shape
 	static final int MODE_LASSO = 3; // the user is drawing a lasso to select shapes
 	static final int MODE_DELETE = 4; // the user is deleting shapes.
+	static final int MODE_FRAME = 5;
 	int currentMode = MODE_NEUTRAL;
 
 	// This is only used when currentMode==MODE_SHAPE_MANIPULATION, otherwise it is equal to -1
 	int indexOfShapeBeingManipulated = -1;
 
 	MyButton lassoButton = new MyButton( "Lasso", 10, 70, 140, 140 );
-	MyButton btnDelete = new MyButton("Effacer", 10, 250, 140, 140);
+	MyButton btnDelete = new MyButton( "Effacer", 10, 215, 140, 140 );
+	MyButton btnFrame = new MyButton( "Encadrer", 10, 360, 140, 140 );
 	
 	OnTouchListener touchListener;
 	
@@ -250,8 +252,9 @@ public class DrawingView extends View {
 
 		gw.setCoordinateSystemToPixels();
 
-		lassoButton.draw( gw, currentMode == MODE_LASSO );
+		lassoButton.draw(gw, currentMode == MODE_LASSO);
 		btnDelete.draw( gw, currentMode == MODE_DELETE);
+		btnFrame.draw( gw, currentMode == MODE_FRAME );
 
 		if ( currentMode == MODE_LASSO ) {
 			MyCursor lassoCursor = cursorContainer.getCursorByType( MyCursor.TYPE_DRAGGING, 0 );
@@ -346,9 +349,12 @@ public class DrawingView extends View {
 							if ( lassoButton.contains(p_pixels) ) {
 								currentMode = MODE_LASSO;
 								cursor.setType(MyCursor.TYPE_BUTTON);
-							} else if (btnDelete.contains(p_pixels)){
+							} else if (btnDelete.contains(p_pixels)) {
 								currentMode = MODE_DELETE;
 								cursor.setType(MyCursor.TYPE_BUTTON);
+							}
+							else if ( btnFrame.contains(p_pixels) ) {
+									currentMode = MODE_FRAME;
 							} else if (Point2DUtil.isPointInsidePolygon(
 									selectionContainer, p_world)) {
 								currentMode = MODE_SHAPE_MANIPULATION;
@@ -475,6 +481,19 @@ public class DrawingView extends View {
 						}
 
 						break;
+						case MODE_FRAME :
+							if ( type == MotionEvent.ACTION_DOWN ) {
+								// no further updating necessary here
+							} else if ( type == MotionEvent.ACTION_MOVE ){
+								// no further updating necessary here
+							} else if ( type == MotionEvent.ACTION_UP ) {
+								gw.frame(shapeContainer.getBoundingRectangle(), true);
+								cursorContainer.removeCursorByIndex( cursorIndex );
+								if ( cursorContainer.getNumCursors() == 0 ) {
+									currentMode = MODE_NEUTRAL;
+								}
+							}
+							break;
 					}
 					
 					v.invalidate();

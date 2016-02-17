@@ -173,6 +173,7 @@ public class DrawingView extends View {
 	static final int MODE_LASSO = 3; // the user is drawing a lasso to select shapes
 	static final int MODE_DELETE = 4; // the user is deleting shapes.
 	static final int MODE_FRAME = 5;
+	static final int MODE_CREATE = 6;
 	int currentMode = MODE_NEUTRAL;
 
 	// This is only used when currentMode==MODE_SHAPE_MANIPULATION, otherwise it is equal to -1
@@ -181,6 +182,9 @@ public class DrawingView extends View {
 	MyButton lassoButton = new MyButton( "Lasso", 10, 70, 140, 140 );
 	MyButton btnDelete = new MyButton( "Effacer", 10, 215, 140, 140 );
 	MyButton btnFrame = new MyButton( "Encadrer", 10, 360, 140, 140 );
+	MyButton btnCreate = new MyButton( "Créer", 10, 505, 140, 140 );
+
+	Shape previewCreationShape;
 	
 	OnTouchListener touchListener;
 	
@@ -227,7 +231,7 @@ public class DrawingView extends View {
 
 		gw.setCoordinateSystemToWorldSpaceUnits();
 
-		gw.setLineWidth( 1 );
+		gw.setLineWidth(1);
 
 		// draw a polygon around the currently selected shapes
 		if ( selectedShapes.size() > 0 ) {
@@ -250,11 +254,16 @@ public class DrawingView extends View {
 		// draw all the shapes
 		shapeContainer.draw(gw, indexOfShapeBeingManipulated);
 
+		if (previewCreationShape != null) {
+			previewCreationShape.draw( gw, true );
+		}
+
 		gw.setCoordinateSystemToPixels();
 
 		lassoButton.draw(gw, currentMode == MODE_LASSO);
 		btnDelete.draw( gw, currentMode == MODE_DELETE);
 		btnFrame.draw( gw, currentMode == MODE_FRAME );
+		btnCreate.draw( gw, currentMode == MODE_CREATE );
 
 		if ( currentMode == MODE_LASSO ) {
 			MyCursor lassoCursor = cursorContainer.getCursorByType( MyCursor.TYPE_DRAGGING, 0 );
@@ -354,7 +363,11 @@ public class DrawingView extends View {
 								cursor.setType(MyCursor.TYPE_BUTTON);
 							}
 							else if ( btnFrame.contains(p_pixels) ) {
-									currentMode = MODE_FRAME;
+								currentMode = MODE_FRAME;
+							}
+							else if ( btnCreate.contains(p_pixels)) {
+								currentMode = MODE_CREATE;
+								cursor.setType(MyCursor.TYPE_BUTTON);
 							} else if (Point2DUtil.isPointInsidePolygon(
 									selectionContainer, p_world)) {
 								currentMode = MODE_SHAPE_MANIPULATION;
@@ -490,6 +503,55 @@ public class DrawingView extends View {
 								gw.frame(shapeContainer.getBoundingRectangle(), true);
 								cursorContainer.removeCursorByIndex( cursorIndex );
 								if ( cursorContainer.getNumCursors() == 0 ) {
+									currentMode = MODE_NEUTRAL;
+								}
+							}
+							break;
+						case MODE_CREATE :
+							if ( type == MotionEvent.ACTION_DOWN ) {
+								// no further updating necessary here
+								if (cursorContainer.getNumCursors() >= 4) {
+									ArrayList<Point2D> points = new ArrayList<>();
+									for (int i = cursorContainer.getNumCursors()-1; i > 0; i--) {
+										MyCursor cursorPoint = cursorContainer.getCursorByIndex(i);
+										if (cursorPoint.getType() != MyCursor.TYPE_BUTTON) {
+											points.add(gw.convertPixelsToWorldSpaceUnits(cursorPoint.getCurrentPosition()));
+										}
+									}
+									previewCreationShape = new Shape(points);
+									previewCreationShape.draw( gw, false );
+								} else {
+									previewCreationShape = null;
+								}
+							} else if ( type == MotionEvent.ACTION_MOVE ){
+								// no further updating necessary here
+								if (cursorContainer.getNumCursors() >= 4) {
+									ArrayList<Point2D> points = new ArrayList<>();
+									for (int i = cursorContainer.getNumCursors()-1; i > 0; i--) {
+										MyCursor cursorPoint = cursorContainer.getCursorByIndex(i);
+										if (cursorPoint.getType() != MyCursor.TYPE_BUTTON) {
+											points.add(gw.convertPixelsToWorldSpaceUnits(cursorPoint.getCurrentPosition()));
+										}
+									}
+									previewCreationShape = new Shape(points);
+									previewCreationShape.draw( gw, false );
+								} else {
+									previewCreationShape = null;
+								}
+							} else if ( type == MotionEvent.ACTION_UP ) {
+								if (cursor.getType() == MyCursor.TYPE_BUTTON ) {
+									if (cursorContainer.getNumCursors() >= 4 && previewCreationShape != null) {
+										shapeContainer.addShape(previewCreationShape.getPoints());
+										previewCreationShape = null;
+									}
+									for (int i = cursorContainer.getNumCursors()-1; i > 0; i--) {
+										cursorContainer.removeCursorByIndex(i);
+									}
+								}
+
+								cursorContainer.removeCursorByIndex( cursorIndex );
+								// Just in case.
+								if ( cursorContainer.getNumCursors() == 0 || cursor.getType() == MyCursor.TYPE_BUTTON ) {
 									currentMode = MODE_NEUTRAL;
 								}
 							}
